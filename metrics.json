@@ -1,0 +1,19 @@
+{
+  "internal_cv": {
+    "auc": 0.9322,
+    "accuracy": 0.8824,
+    "n": 68
+  },
+  "external": {
+    "auc": 0.8106,
+    "accuracy": 0.7826,
+    "n": 23
+  },
+  "baseline_accuracy": 0.6176,
+  "n_genes": 49372,
+  "k_selected": 25,
+  "seed": 42,
+  "python": "3.14.6",
+  "train_data": "GEO GSE123698",
+  "external_data": "GSE123696+GSE123697 (unseen individuals only)"
+}

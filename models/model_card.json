@@ -1,0 +1,12 @@
+{
+  "task": "Immunosenescence classification (younger vs older immune profile)",
+  "dataset": "GEO GSE123698, 68 whole-blood transcriptomes, ages 24-97",
+  "model": "SelectKBest(f_classif, k=25) -> LogisticRegression(C=0.01) on GPL15207 gene expression",
+  "input": "whole-blood expression vector in the GPL15207 probe schema (~49k probes), per-cohort z-scored",
+  "output": "P(older immune profile); >=0.5 -> older",
+  "internal_cv_auc": 0.93,
+  "external_auc_unseen_people": 0.81,
+  "external_accuracy_unseen_people": 0.78,
+  "note": "Trained on year-2015 cohort; externally validated only on individuals absent from training (GSE123696/697 are the same longitudinal study). Per-cohort z-scoring is required to correct batch effects across datasets.",
+  "usage": "python predict.py expression.csv"
+}
