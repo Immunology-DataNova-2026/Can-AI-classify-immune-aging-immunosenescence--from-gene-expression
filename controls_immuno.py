@@ -1,19 +1,3 @@
-"""
-DataNova 2026 — control experiments for the immunosenescence pipeline.
-
-Drop this in the root of the immuno repo (next to pipeline.py) and run:
-
-    python controls.py
-
-It produces results/controls_report.md plus three CSVs. Every number it prints
-is a gap the paper currently names as unquantified, so paste the outputs into:
-
-  * Table 7  (ablation)         <- CONTROL 3
-  * Section 4.3 results         <- CONTROL 1 and CONTROL 2
-  * Figure 4 replacement        <- CONTROL 4 writes the curve points
-
-Requires only what pipeline.py already requires.
-"""
 from __future__ import annotations
 import json, warnings
 from pathlib import Path
@@ -27,7 +11,7 @@ from sklearn.metrics import (accuracy_score, roc_auc_score, roc_curve,
 from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
 
-import pipeline as P  # reuse load_series / to_xy / normalize / make_model
+import pipeline as P
 
 warnings.filterwarnings("ignore")
 OUT = Path("results"); OUT.mkdir(exist_ok=True)
@@ -41,7 +25,6 @@ def say(m=""):
     log.append(m)
 
 
-# --------------------------------------------------------------- data
 say("# Control experiments\n")
 say("Loading GEO series (cached after the first run)...\n")
 train = P.load_series(P.TRAIN_GSE)
@@ -60,7 +43,6 @@ say(f"- candidate genes: {len(genes):,}\n")
 
 
 def fit_score(Xtr, ytr, Xte, yte, cols=None):
-    """Fit the standard model (optionally on a fixed gene subset) and score externally."""
     if cols is None:
         model = P.make_model()
     else:
@@ -72,7 +54,6 @@ def fit_score(Xtr, ytr, Xte, yte, cols=None):
     return accuracy_score(yte, (pr > .5).astype(int)), roc_auc_score(yte, pr)
 
 
-# ---------------------------------------------------- CONTROL 1: random genes
 say("## CONTROL 1 — random-gene null distribution\n")
 say("Does the ANOVA filter actually do work, or would any 25 genes score this well?\n")
 N_DRAWS = 100
@@ -84,7 +65,7 @@ for i in range(N_DRAWS):
 rand = pd.DataFrame(rows)
 rand.to_csv(OUT / "control_random_genes.csv", index=False)
 
-real_acc, real_auc = 0.7826, 0.8106  # committed metrics.json values
+real_acc, real_auc = 0.7826, 0.8106
 pct = (rand["auc"] < real_auc).mean() * 100
 say(f"- random 25-gene panels, external AUC: mean {rand['auc'].mean():.3f}, "
     f"sd {rand['auc'].std():.3f}, range {rand['auc'].min():.3f}-{rand['auc'].max():.3f}")
@@ -93,7 +74,6 @@ say(f"- **selected panel: AUC {real_auc:.3f} — above {pct:.0f}% of random draw
 say(f"- empirical p-value: {(rand['auc'] >= real_auc).mean():.3f}\n")
 
 
-# ------------------------------------------- CONTROL 2: panel-size baselines
 say("## CONTROL 2 — how much of the signal lives in the top gene?\n")
 F_scores, _ = f_classif(X.values, y)
 order = np.argsort(F_scores)[::-1]
@@ -109,13 +89,12 @@ say("\n(Selection here is fit on the full training set, matching how the final "
     "model is fitted before external validation.)\n")
 
 
-# --------------------------------- CONTROL 3: ablate the fold-internal filter
 say("## CONTROL 3 — what is refitting the filter inside each fold worth?\n")
 
 correct = cross_val_predict(P.make_model(), X, y, cv=cv, method="predict_proba")[:, 1]
 acc_ok, auc_ok = accuracy_score(y, (correct > .5).astype(int)), roc_auc_score(y, correct)
 
-leaky_sel = SelectKBest(f_classif, k=25).fit(X, y)          # fit ONCE on everything
+leaky_sel = SelectKBest(f_classif, k=25).fit(X, y)
 X_leak = pd.DataFrame(leaky_sel.transform(X))
 leaked = cross_val_predict(LogisticRegression(C=0.01, max_iter=5000),
                            X_leak, y, cv=cv, method="predict_proba")[:, 1]
@@ -127,7 +106,6 @@ say(f"- **inflation from selection leakage: {auc_bad - auc_ok:+.3f} AUC**\n")
 say("Paste into Table 7, row 'Filter refit inside folds'.\n")
 
 
-# ------------------------------------------- CONTROL 4: real ROC / PR curves
 say("## CONTROL 4 — empirical ROC and PR curves\n")
 model = P.make_model().fit(X, y)
 pr_ext = model.predict_proba(Xext)[:, 1]
@@ -145,7 +123,6 @@ for name, yt, pp in (("internal_cv", y, correct), ("external", yext, pr_ext)):
 say("\nWritten to results/curves.json — plot these instead of the schematic in Figure 4.\n")
 
 
-# ------------------------------------------------------- CONTROL 5: CIs
 say("## CONTROL 5 — bootstrap confidence intervals\n")
 for name, yt, pp in (("internal_cv", y, correct), ("external", yext, pr_ext)):
     aucs = []
